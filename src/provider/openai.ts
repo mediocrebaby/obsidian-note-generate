@@ -1,6 +1,6 @@
 /**
  * OpenAI API Client
- * Implements the /v1/responses (or /v1/chat/completions) endpoint for chat functionality
+ * Implements the /v1/chat/completions endpoint for chat functionality
  */
 
 // API Types
@@ -81,7 +81,7 @@ export class OpenAIClient {
 	constructor(config: OpenAIClientConfig) {
 		this.apiKey = config.apiKey;
 		this.baseURL = config.baseURL || 'https://api.openai.com';
-		this.endpoint = config.endpoint || '/v1/responses';
+		this.endpoint = config.endpoint || '/v1/chat/completions';
 	}
 
 	/**

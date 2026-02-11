@@ -22,7 +22,35 @@ export default class NoteGeneratePlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<NoteGeneratePluginSettings>);
+		const loadedData = await this.loadData() as Partial<NoteGeneratePluginSettings>;
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
+
+		// 数据迁移：确保 providerSettings 存在且完整
+		if (!this.settings.providerSettings) {
+			this.settings.providerSettings = {
+				OpenAI: {
+					baseUrl: this.settings.baseUrl,
+					apiKey: this.settings.apiKey,
+					model: this.settings.model
+				},
+				Anthropic: {
+					baseUrl: DEFAULT_SETTINGS.providerSettings.Anthropic.baseUrl,
+					apiKey: "",
+					model: DEFAULT_SETTINGS.providerSettings.Anthropic.model
+				}
+			};
+		} else {
+			// 确保每个提供商都有配置
+			if (!this.settings.providerSettings.OpenAI) {
+				this.settings.providerSettings.OpenAI = DEFAULT_SETTINGS.providerSettings.OpenAI;
+			}
+			if (!this.settings.providerSettings.Anthropic) {
+				this.settings.providerSettings.Anthropic = DEFAULT_SETTINGS.providerSettings.Anthropic;
+			}
+		}
+
+		// 保存迁移后的设置
+		await this.saveSettings();
 	}
 
 	async saveSettings() {

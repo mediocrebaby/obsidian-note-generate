@@ -5,6 +5,13 @@ import { AnthropicClient } from "./provider/anthropic";
 
 export type AIProvider = "OpenAI" | "Anthropic";
 
+// 单个提供商的配置
+interface ProviderSettings {
+	baseUrl: string;
+	apiKey: string;
+	model: string;
+}
+
 export interface NoteGeneratePluginSettings {
 	provider: AIProvider;
 	baseUrl: string;
@@ -12,6 +19,10 @@ export interface NoteGeneratePluginSettings {
 	model: string;
 	streaming: boolean;
 	maxTokens: number;
+	// 每个提供商的特定配置存储
+	providerSettings: {
+		[key in AIProvider]: ProviderSettings;
+	};
 }
 
 export const DEFAULT_SETTINGS: NoteGeneratePluginSettings = {
@@ -20,7 +31,19 @@ export const DEFAULT_SETTINGS: NoteGeneratePluginSettings = {
 	apiKey: "",
 	model: "gpt-5.2",
 	streaming: true,
-	maxTokens: 4096
+	maxTokens: 4096,
+	providerSettings: {
+		OpenAI: {
+			baseUrl: "https://api.openai.com",
+			apiKey: "",
+			model: "gpt-5.2"
+		},
+		Anthropic: {
+			baseUrl: "https://api.anthropic.com",
+			apiKey: "",
+			model: "claude-sonnet-5@20260203"
+		}
+	}
 }
 
 // 供应商配置
@@ -44,6 +67,28 @@ export class NoteGenerateSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
+	/**
+	 * 保存当前提供商的配置
+	 */
+	private saveCurrentProviderSettings(): void {
+		const currentProvider = this.plugin.settings.provider;
+		this.plugin.settings.providerSettings[currentProvider] = {
+			baseUrl: this.plugin.settings.baseUrl,
+			apiKey: this.plugin.settings.apiKey,
+			model: this.plugin.settings.model
+		};
+	}
+
+	/**
+	 * 加载指定提供商的配置
+	 */
+	private loadProviderSettings(provider: AIProvider): void {
+		const providerSettings = this.plugin.settings.providerSettings[provider];
+		this.plugin.settings.baseUrl = providerSettings.baseUrl;
+		this.plugin.settings.apiKey = providerSettings.apiKey;
+		this.plugin.settings.model = providerSettings.model;
+	}
+
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
@@ -59,10 +104,15 @@ export class NoteGenerateSettingTab extends PluginSettingTab {
 				.addOption("Anthropic", "Anthropic")
 				.setValue(this.plugin.settings.provider)
 				.onChange(async (value: AIProvider) => {
+					// 保存当前提供商的配置
+					this.saveCurrentProviderSettings();
+
+					// 切换提供商
 					this.plugin.settings.provider = value;
-					// 切换提供商时更新默认 URL 和模型
-					this.plugin.settings.baseUrl = PROVIDER_CONFIG[value].defaultUrl;
-					this.plugin.settings.model = PROVIDER_CONFIG[value].defaultModel;
+
+					// 加载新提供商的配置
+					this.loadProviderSettings(value);
+
 					await this.plugin.saveSettings();
 					this.display(); // 重新渲染设置页面
 				}));
@@ -85,6 +135,8 @@ export class NoteGenerateSettingTab extends PluginSettingTab {
 						correctedUrl = correctedUrl.slice(0, -1);
 					}
 					this.plugin.settings.baseUrl = correctedUrl;
+					// 同步保存到当前提供商的配置
+					this.plugin.settings.providerSettings[this.plugin.settings.provider].baseUrl = correctedUrl;
 					await this.plugin.saveSettings();
 					// 更新输入框显示校正后的值
 					text.setValue(correctedUrl);
@@ -99,6 +151,8 @@ export class NoteGenerateSettingTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.apiKey)
 					.onChange(async (value) => {
 						this.plugin.settings.apiKey = value;
+						// 同步保存到当前提供商的配置
+						this.plugin.settings.providerSettings[this.plugin.settings.provider].apiKey = value;
 						await this.plugin.saveSettings();
 					});
 				// 设置为密码输入
@@ -110,22 +164,32 @@ export class NoteGenerateSettingTab extends PluginSettingTab {
 			.setName("Model")
 			.setDesc("AI model to use")
 			.addDropdown(dropdown => {
+				const defaultModel = PROVIDER_CONFIG[this.plugin.settings.provider].defaultModel;
+				const currentModel = this.plugin.settings.model;
+
 				// 添加默认模型
-				dropdown.addOption(
-					PROVIDER_CONFIG[this.plugin.settings.provider].defaultModel,
-					PROVIDER_CONFIG[this.plugin.settings.provider].defaultModel + " (Default)"
-				);
+				dropdown.addOption(defaultModel, defaultModel + " (Default)");
+
+				// 如果当前模型不是默认模型，也添加到选项中
+				if (currentModel && currentModel !== defaultModel) {
+					dropdown.addOption(currentModel, currentModel);
+				}
 
 				// 设置当前值
-				dropdown.setValue(this.plugin.settings.model);
+				dropdown.setValue(currentModel);
 
-				// 当下拉框获得焦点时加载模型列表
+				// 进入设置页面时立即加载模型列表
+				this.loadModels(dropdown);
+
+				// 当下拉框获得焦点时也加载模型列表（作为备用）
 				dropdown.selectEl.addEventListener("focus", async () => {
 					await this.loadModels(dropdown);
 				});
 
 				dropdown.onChange(async (value) => {
 					this.plugin.settings.model = value;
+					// 同步保存到当前提供商的配置
+					this.plugin.settings.providerSettings[this.plugin.settings.provider].model = value;
 					await this.plugin.saveSettings();
 				});
 			});
@@ -237,7 +301,12 @@ export class NoteGenerateSettingTab extends PluginSettingTab {
 		});
 
 		// 恢复之前选择的值
-		if (currentValue && models.includes(currentValue)) {
+		// 如果当前值存在，检查是否在模型列表中或是默认模型
+		if (currentValue && (models.includes(currentValue) || currentValue === defaultModel)) {
+			dropdown.setValue(currentValue);
+		} else if (currentValue && !models.includes(currentValue) && currentValue !== defaultModel) {
+			// 如果当前值不在列表中且不是默认模型，也添加它以保持用户的选择
+			dropdown.addOption(currentValue, currentValue);
 			dropdown.setValue(currentValue);
 		}
 	}
