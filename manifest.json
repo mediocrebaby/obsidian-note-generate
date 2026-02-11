@@ -1,0 +1,10 @@
+{
+	"id": "obsidian-note-generate",
+	"name": "NoteGenerate",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "Generate note content by AI.",
+	"author": "JustSo",
+	"isDesktopOnly": false,
+	"manifest_version": 2
+}
