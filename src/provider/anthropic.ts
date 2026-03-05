@@ -9,6 +9,11 @@ export interface AnthropicMessage {
 	content: string;
 }
 
+export interface AnthropicSystemMessage {
+	type: 'text';
+	text: string;
+}
+
 export interface AnthropicRequestParams {
 	model: string;
 	messages: AnthropicMessage[];
@@ -18,7 +23,7 @@ export interface AnthropicRequestParams {
 	top_k?: number;
 	stop_sequences?: string[];
 	stream?: boolean;
-	system?: string;
+	system?: AnthropicSystemMessage[];
 }
 
 export interface AnthropicContentBlock {

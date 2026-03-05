@@ -6,3 +6,150 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
+
+/* Floating prompt input */
+.ng-float-wrap {
+    position: absolute;
+    z-index: 1000;
+    width: 480px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    animation: ng-float-in 0.12s ease-out;
+    overflow: hidden;
+}
+
+.ng-float-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px 6px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.ng-float-icon {
+    font-size: 14px;
+    color: var(--interactive-accent);
+    line-height: 1;
+}
+
+.ng-float-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.ng-float-input {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: var(--background-modifier-form-field);
+    color: var(--text-normal);
+    font-size: 14px;
+    font-family: inherit;
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 60px;
+    transition: border-bottom-color 0.15s;
+}
+
+.ng-float-input:focus {
+    border-bottom-color: var(--interactive-accent);
+    outline: none;
+}
+
+.ng-float-input::placeholder {
+    color: var(--text-faint);
+}
+
+.ng-float-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 12px 8px;
+}
+
+.ng-float-hint {
+    font-size: 11px;
+    color: var(--text-faint);
+}
+
+.ng-float-submit {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: none;
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s;
+}
+
+.ng-float-submit:hover {
+    opacity: 0.85;
+}
+
+@keyframes ng-float-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Loading indicator */
+.ng-loading-indicator {
+    position: absolute;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+    animation: ng-float-in 0.12s ease-out;
+    transition: opacity 0.15s ease-out;
+}
+
+.ng-loading-indicator.ng-fade-out {
+    opacity: 0;
+}
+
+.ng-loading-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--interactive-accent);
+    animation: ng-dot-pulse 1.2s ease-in-out infinite;
+}
+
+.ng-loading-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.ng-loading-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes ng-dot-pulse {
+    0%, 60%, 100% {
+        transform: scale(0.6);
+        opacity: 0.4;
+    }
+    30% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
