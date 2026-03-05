@@ -199,11 +199,11 @@ ${beforeCursor}[CURSOR]${afterCursor}
 				});
 
 				if (streaming) {
-					await client.createChatCompletionStream(
+					await client.createResponseStream(
 						{
 							model,
-							messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: prompt }],
-							max_tokens: maxTokens
+							input: [{ role: 'developer', content: systemPrompt }, { role: 'user', content: prompt }],
+							max_output_tokens: maxTokens
 						},
 						(chunk: string) => {
 							removeLoading();
@@ -221,13 +221,13 @@ ${beforeCursor}[CURSOR]${afterCursor}
 						}
 					);
 				} else {
-					const response = await client.createChatCompletion({
+					const response = await client.createResponse({
 						model,
-						messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: prompt }],
-						max_tokens: maxTokens
+						input: [{ role: 'developer', content: systemPrompt }, { role: 'user', content: prompt }],
+						max_output_tokens: maxTokens
 					});
 					removeLoading();
-					const content = response.choices[0]?.message?.content;
+					const content = response.output[0]?.content[0]?.text;
 					if (content) {
 						editor.replaceRange(content, currentPos);
 					}

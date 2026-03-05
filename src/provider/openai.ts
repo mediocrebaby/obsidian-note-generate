@@ -1,46 +1,49 @@
 /**
  * OpenAI API Client
- * Implements the /v1/chat/completions endpoint for chat functionality
+ * Implements the /v1/responses endpoint
  */
 
 // API Types
-export interface OpenAIMessage {
-	role: 'system' | 'user' | 'assistant';
+export interface OpenAIInputMessage {
+	role: 'user' | 'assistant' | 'developer';
 	content: string;
 }
 
 export interface OpenAIRequestParams {
 	model: string;
-	messages: OpenAIMessage[];
-	max_tokens?: number;
+	input: string | OpenAIInputMessage[];
+	max_output_tokens?: number;
 	temperature?: number;
 	top_p?: number;
-	frequency_penalty?: number;
-	presence_penalty?: number;
-	stop?: string | string[];
 	stream?: boolean;
 }
 
-export interface OpenAIChoice {
-	index: number;
-	message: {
-		role: 'assistant';
-		content: string;
-	};
-	finish_reason: 'stop' | 'length' | 'content_filter' | null;
+export interface OpenAIOutputContent {
+	type: 'output_text' | 'refusal';
+	text?: string;
+	refusal?: string;
+}
+
+export interface OpenAIOutputMessage {
+	type: 'message';
+	id: string;
+	role: 'assistant';
+	content: OpenAIOutputContent[];
+	status: 'completed' | 'in_progress' | 'incomplete';
 }
 
 export interface OpenAIResponse {
 	id: string;
-	object: 'chat.completion';
-	created: number;
+	object: 'response';
+	created_at: number;
 	model: string;
-	choices: OpenAIChoice[];
+	output: OpenAIOutputMessage[];
 	usage: {
-		prompt_tokens: number;
-		completion_tokens: number;
+		input_tokens: number;
+		output_tokens: number;
 		total_tokens: number;
 	};
+	status: 'completed' | 'failed' | 'in_progress' | 'incomplete';
 }
 
 export interface OpenAIError {
@@ -81,13 +84,13 @@ export class OpenAIClient {
 	constructor(config: OpenAIClientConfig) {
 		this.apiKey = config.apiKey;
 		this.baseURL = config.baseURL || 'https://api.openai.com';
-		this.endpoint = config.endpoint || '/v1/chat/completions';
+		this.endpoint = config.endpoint || '/v1/responses';
 	}
 
 	/**
-	 * Create a chat completion using the configured endpoint
+	 * Create a response using the /v1/responses endpoint
 	 */
-	async createChatCompletion(params: OpenAIRequestParams): Promise<OpenAIResponse> {
+	async createResponse(params: OpenAIRequestParams): Promise<OpenAIResponse> {
 		const url = `${this.baseURL}${this.endpoint}`;
 
 		const headers = {
@@ -120,9 +123,9 @@ export class OpenAIClient {
 	}
 
 	/**
-	 * Create a chat completion with streaming support
+	 * Create a response with streaming support
 	 */
-	async createChatCompletionStream(
+	async createResponseStream(
 		params: OpenAIRequestParams,
 		onChunk: (text: string) => void
 	): Promise<void> {
@@ -172,9 +175,11 @@ export class OpenAIClient {
 
 						try {
 							const parsed = JSON.parse(data);
-							const content = parsed.choices?.[0]?.delta?.content;
-							if (content) {
-								onChunk(content);
+							if (parsed.type === 'response.output_text.delta') {
+								const delta = parsed.delta;
+								if (delta) {
+									onChunk(delta);
+								}
 							}
 						} catch (e) {
 							// Skip invalid JSON
